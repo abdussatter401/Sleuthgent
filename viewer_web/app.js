@@ -1,20 +1,9 @@
 'use strict';
 
 const state = {
-  summary: null,
   androidRuns: [],
   sessionPage: 1,
-  sessionPages: 1,
   selectedSession: null,
-  androidPage: 1,
-  androidPages: 1,
-};
-
-const viewMeta = {
-  overview: ['CASE OVERVIEW', 'Activity reconstruction'],
-  sessions: ['PROVIDER TRANSCRIPTS', 'Session investigation'],
-  android: ['DEVICE EVIDENCE', 'Android activity'],
-  methodology: ['INTERPRETATION GUIDE', 'Reconstruction methodology'],
 };
 
 function element(tag, className, text) {
@@ -33,24 +22,10 @@ function formatNumber(value) {
   return new Intl.NumberFormat().format(value || 0);
 }
 
-function formatTime(timestamp) {
-  if (!timestamp) return 'No timestamp';
-  const date = new Date(Number(timestamp));
-  if (Number.isNaN(date.valueOf())) return String(timestamp);
-  return date.toLocaleString([], {
-    year: 'numeric', month: 'short', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-  });
-}
-
 function shortId(value, length = 14) {
   if (!value) return '—';
   const text = String(value);
   return text.length > length ? `${text.slice(0, length)}…` : text;
-}
-
-function percent(part, total) {
-  return total ? Math.round((part / total) * 1000) / 10 : 0;
 }
 
 async function api(path, params) {
@@ -83,121 +58,6 @@ async function copyText(text, label = 'Copied') {
   }
 }
 
-function switchView(name) {
-  document.querySelectorAll('.view').forEach(node => node.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(node => node.classList.remove('active'));
-  document.getElementById(`${name}-view`).classList.add('active');
-  document.querySelector(`.nav-item[data-view="${name}"]`).classList.add('active');
-  document.getElementById('view-eyebrow').textContent = viewMeta[name][0];
-  document.getElementById('view-title').textContent = viewMeta[name][1];
-  document.querySelector('.sidebar').classList.remove('open');
-  if (name === 'sessions') loadSessions();
-  if (name === 'android') loadAndroidMessages();
-}
-
-function metricCard(label, value, detail) {
-  const card = element('article', 'metric');
-  card.append(element('span', 'label', label));
-  card.append(element('strong', '', formatNumber(value)));
-  card.append(element('small', '', detail));
-  return card;
-}
-
-function renderOverview() {
-  const summary = state.summary;
-  const cards = clear(document.getElementById('summary-cards'));
-  cards.append(
-    metricCard('Provider sessions', summary.sessions, `${summary.linked_sessions} linked to device evidence`),
-    metricCard('Reconstructed turns', summary.turns, 'Positional grouping heuristic'),
-    metricCard('User messages', summary.user_messages, 'Provider-side transcript records'),
-    metricCard('Tool calls', summary.tool_calls, 'Typed function-call records'),
-    metricCard('Explicit approvals', summary.approvals, 'No inferred approvals'),
-  );
-
-  const audit = summary.manifest_join_audit;
-  const coverage = percent(audit.overlap, audit.manifest_ids);
-  const coverageRoot = clear(document.getElementById('join-coverage'));
-  const wrap = element('div', 'coverage-wrap');
-  const donut = element('div', 'donut');
-  donut.style.setProperty('--percent', coverage);
-  const donutLabel = element('div', 'donut-label');
-  donutLabel.append(element('strong', '', `${coverage}%`), element('span', '', 'manifest IDs matched'));
-  donut.append(donutLabel);
-  const details = element('div', 'coverage-details');
-  [
-    ['Manifest IDs matched', audit.overlap, audit.manifest_ids],
-    ['Manifest IDs unmatched', audit.manifest_ids - audit.overlap, audit.manifest_ids],
-    ['Unique Android IDs', audit.android_ids, audit.android_ids],
-  ].forEach(([label, value, total]) => {
-    const row = element('div', 'coverage-stat');
-    row.append(element('span', '', label), element('strong', '', `${formatNumber(value)} / ${formatNumber(total)}`));
-    const bar = element('div', 'bar');
-    const fill = element('i');
-    fill.style.width = `${percent(value, total)}%`;
-    bar.append(fill);
-    row.append(bar);
-    details.append(row);
-  });
-  wrap.append(donut, details);
-  coverageRoot.append(wrap);
-
-  const source = clear(document.getElementById('source-coverage'));
-  const sourceList = element('div', 'source-list');
-  const androidMessages = summary.android_runs.reduce((total, run) => total + run.messages, 0);
-  const sourceRows = [
-    ['Run index entries', summary.run_count],
-    ['Android evidence runs', summary.android_runs.length],
-    ['Device messages', androidMessages],
-    ['Provider sessions', summary.sessions],
-    ['Manifest turns', audit.manifest_ids],
-  ];
-  sourceRows.forEach(([label, value]) => {
-    const row = element('div', 'source-row');
-    row.append(element('span', '', label), element('strong', '', formatNumber(value)));
-    sourceList.append(row);
-  });
-  source.append(sourceList);
-
-  const policies = clear(document.getElementById('policy-list'));
-  [
-    ['✓', 'Private thinking content is withheld.'],
-    ['✓', 'Approvals require explicit confirmation records.'],
-    ['△', 'Turn grouping is a positional heuristic.'],
-    ['✓', 'Android chronology uses timestamp and sequence.'],
-  ].forEach(([icon, text]) => {
-    const item = element('div', 'policy-item');
-    item.append(element('b', '', icon), element('span', '', text));
-    policies.append(item);
-  });
-}
-
-async function renderNotableSessions() {
-  const data = await api('/api/sessions', {sort: 'tool_calls', page_size: 6});
-  const root = clear(document.getElementById('notable-sessions'));
-  const header = element('div', 'table-row header');
-  ['Session', 'Turns', 'Tools', 'Approvals', 'Device'].forEach(text => header.append(element('span', '', text)));
-  root.append(header);
-  data.items.forEach(item => {
-    const row = element('div', 'table-row');
-    const button = element('button', 'session-link', item.session_id);
-    button.title = item.session_id;
-    button.addEventListener('click', () => openSessionFromOverview(item.session_id));
-    row.append(
-      button,
-      element('span', '', item.turns),
-      element('span', '', item.tool_calls),
-      element('span', '', item.approvals),
-      element('span', item.linked_android_runs.length ? 'link-chip' : '', item.linked_android_runs.length ? 'Linked' : '—'),
-    );
-    root.append(row);
-  });
-}
-
-async function openSessionFromOverview(sessionId) {
-  switchView('sessions');
-  await selectSession(sessionId);
-}
-
 function sessionParams() {
   return {
     q: document.getElementById('session-search').value,
@@ -212,7 +72,6 @@ function sessionParams() {
 async function loadSessions() {
   try {
     const data = await api('/api/sessions', sessionParams());
-    state.sessionPages = data.pages;
     state.sessionPage = Math.min(state.sessionPage, data.pages);
     document.getElementById('session-result-count').textContent = `${formatNumber(data.total)} sessions`;
     document.getElementById('session-page-label').textContent = `Page ${data.page} of ${data.pages}`;
@@ -322,9 +181,7 @@ function renderSessionDetail(data) {
   if (data.grouping_note) detail.append(element('div', 'grouping-note', data.grouping_note));
   const turns = element('div', 'turn-list');
   data.turns.forEach((turn, index) => turns.append(renderTurn(turn, index)));
-  if (!data.turns.length) {
-    turns.append(errorBlock('This provider session contains no reconstructed turns.'));
-  }
+  if (!data.turns.length) turns.append(errorBlock('This provider session contains no reconstructed turns.'));
   detail.append(turns);
 }
 
@@ -379,12 +236,11 @@ function renderAction(action) {
   const body = element('div', 'action-body');
   if (action.kind === 'tool_call') {
     body.append(codeBlock('Arguments', action.arguments));
-    const callMeta = {
+    body.append(codeBlock('Call and result metadata', {
       call_id: action.call_id,
       output: action.output || 'No paired output metadata',
       explicit_approvals: action.approvals || [],
-    };
-    body.append(codeBlock('Call and result metadata', callMeta));
+    }));
   } else if (action.kind === 'thinking') {
     body.append(element('p', '', 'A private reasoning block was recorded at this sequence position. Its content is not reproduced.'));
   } else if (action.text !== undefined) {
@@ -425,75 +281,6 @@ function locatorRow(locator) {
   return row;
 }
 
-async function loadAndroidMessages() {
-  const runId = document.getElementById('android-run').value;
-  if (!runId) return;
-  const params = {
-    q: document.getElementById('android-search').value,
-    role: document.getElementById('android-role').value,
-    joined: document.getElementById('android-joined').value,
-    page: state.androidPage,
-    page_size: 40,
-  };
-  const list = clear(document.getElementById('android-message-list'));
-  list.append(loadingBlock('Loading device messages…'));
-  try {
-    const data = await api(`/api/android/${encodeURIComponent(runId)}`, params);
-    state.androidPages = data.pages;
-    renderAndroidHeader(data);
-    clear(list);
-    if (!data.items.length) list.append(errorBlock('No device messages match these filters.'));
-    data.items.forEach(message => list.append(renderAndroidMessage(message)));
-    renderPagination(document.getElementById('android-pagination'), data.page, data.pages, page => {
-      state.androidPage = page;
-      loadAndroidMessages();
-      window.scrollTo({top: 0, behavior: 'smooth'});
-    });
-  } catch (error) {
-    clear(list).append(errorBlock(error.message));
-  }
-}
-
-function renderAndroidHeader(data) {
-  const root = clear(document.getElementById('android-run-header'));
-  const title = element('div');
-  title.append(element('h2', '', data.run_id), element('p', '', data.ordering_note || 'Device-side evidence'));
-  root.append(title, element('span', 'run-count', `${formatNumber(data.total)} matching messages`));
-}
-
-function renderAndroidMessage(message) {
-  const role = String(message.role || 'UNKNOWN');
-  const root = element('article', `message ${role === 'USER' ? 'user' : 'agent'}`);
-  const time = element('div', 'message-time');
-  time.append(document.createTextNode(formatTime(message.timestamp_ms)));
-  time.append(document.createElement('br'));
-  time.append(document.createTextNode(`seq ${message.seq ?? '—'}`));
-  const track = element('div', 'message-track');
-  track.append(element('span', 'message-dot', role === 'USER' ? 'U' : 'A'));
-  const card = element('div', 'message-card');
-  const meta = element('div', 'message-meta');
-  meta.append(element('strong', '', role));
-  if (message.manifest_turn) meta.append(badge('Manifest joined', 'green'));
-  else meta.append(badge('No manifest match', ''));
-  if (message.gcm_authenticated === true) meta.append(badge('GCM authenticated', 'blue'));
-  if (message.metadata_mismatches && message.metadata_mismatches.length) meta.append(badge(`${message.metadata_mismatches.length} metadata mismatch`, 'amber'));
-  card.append(meta, element('div', 'message-content', message.content || '[No text content]'));
-  const identifiers = element('div', 'message-identifiers');
-  const messageId = element('span', '', `message ${message.message_id || '—'}`);
-  messageId.title = message.message_id || '';
-  const sessionId = element('span', '', `thread ${message.session_id || '—'}`);
-  sessionId.title = message.session_id || '';
-  identifiers.append(messageId, sessionId);
-  if ((message.attachments || []).length) identifiers.append(element('span', '', `${message.attachments.length} attachment(s)`));
-  if ((message.widgets || []).length) identifiers.append(element('span', '', `${message.widgets.length} widget(s)`));
-  if ((message.presentations || []).length) identifiers.append(element('span', '', `${message.presentations.length} presentation(s)`));
-  card.append(identifiers);
-  if (message.locator) card.append(locatorRow(message.locator));
-  track.append();
-  root.append(time, track, card);
-  return root;
-}
-
 function debounce(callback, delay = 250) {
   let timer;
   return (...args) => {
@@ -503,19 +290,12 @@ function debounce(callback, delay = 250) {
 }
 
 function bindEvents() {
-  document.querySelectorAll('.nav-item').forEach(button => {
-    button.addEventListener('click', () => switchView(button.dataset.view));
-  });
-  document.querySelectorAll('[data-go]').forEach(button => {
-    button.addEventListener('click', () => switchView(button.dataset.go));
-  });
   document.getElementById('menu-button').addEventListener('click', () => {
     document.querySelector('.sidebar').classList.toggle('open');
   });
   document.getElementById('theme-button').addEventListener('click', () => {
     document.body.classList.toggle('high-contrast');
   });
-
   const delayedSessions = debounce(() => {
     state.sessionPage = 1;
     loadSessions();
@@ -527,41 +307,20 @@ function bindEvents() {
       loadSessions();
     });
   });
-
-  const delayedAndroid = debounce(() => {
-    state.androidPage = 1;
-    loadAndroidMessages();
-  });
-  document.getElementById('android-search').addEventListener('input', delayedAndroid);
-  ['android-run', 'android-role', 'android-joined'].forEach(id => {
-    document.getElementById(id).addEventListener('change', () => {
-      state.androidPage = 1;
-      loadAndroidMessages();
-    });
-  });
 }
 
-function populateRunSelectors() {
-  const sessionRun = document.getElementById('session-run');
-  const androidRun = document.getElementById('android-run');
-  state.androidRuns.forEach(run => {
-    sessionRun.append(new Option(run.run_id, run.run_id));
-    androidRun.append(new Option(`${run.run_id} (${formatNumber(run.messages)} messages)`, run.run_id));
-  });
+function populateRunSelector() {
+  const selector = document.getElementById('session-run');
+  state.androidRuns.forEach(run => selector.append(new Option(run.run_id, run.run_id)));
 }
 
 async function init() {
   bindEvents();
   try {
-    const [summary, android] = await Promise.all([
-      api('/api/summary'),
-      api('/api/android'),
-    ]);
-    state.summary = summary;
+    const android = await api('/api/android');
     state.androidRuns = android.items;
-    populateRunSelectors();
-    renderOverview();
-    await renderNotableSessions();
+    populateRunSelector();
+    await loadSessions();
     document.getElementById('loading').classList.add('hidden');
   } catch (error) {
     document.getElementById('loading').classList.add('hidden');

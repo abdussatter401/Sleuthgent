@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="light">
   <meta name="description" content="Local forensic viewer for Muse activity reconstructions">
   <title>Muse Activity Viewer</title>
   <link rel="stylesheet" href="/styles.css">
@@ -19,17 +19,8 @@
         </div>
       </div>
       <nav>
-        <button class="nav-item active" data-view="overview">
-          <span class="nav-icon">◇</span><span>Overview</span>
-        </button>
-        <button class="nav-item" data-view="sessions">
+        <button class="nav-item active">
           <span class="nav-icon">≡</span><span>Sessions</span>
-        </button>
-        <button class="nav-item" data-view="android">
-          <span class="nav-icon">▣</span><span>Device Activity</span>
-        </button>
-        <button class="nav-item" data-view="methodology">
-          <span class="nav-icon">i</span><span>Methodology</span>
         </button>
       </nav>
       <div class="sidebar-foot">
@@ -42,8 +33,8 @@
       <header class="topbar">
         <button id="menu-button" class="icon-button menu-button" aria-label="Toggle navigation">☰</button>
         <div>
-          <p class="eyebrow" id="view-eyebrow">CASE OVERVIEW</p>
-          <h1 id="view-title">Activity reconstruction</h1>
+          <p class="eyebrow">PROVIDER TRANSCRIPTS</p>
+          <h1 id="view-title">Session investigation</h1>
         </div>
         <div class="topbar-meta">
           <span class="status-pill"><span></span>Evidence loaded</span>
@@ -56,35 +47,7 @@
       </div>
       <div id="error-banner" class="error-banner hidden" role="alert"></div>
 
-      <section id="overview-view" class="view active" aria-labelledby="view-title">
-        <div id="summary-cards" class="metric-grid"></div>
-        <div class="dashboard-grid">
-          <article class="panel span-two">
-            <div class="panel-heading">
-              <div><p class="eyebrow">EVIDENCE CORRELATION</p><h2>Manifest ↔ Android coverage</h2></div>
-              <span class="evidence-badge">Stable ID join</span>
-            </div>
-            <div id="join-coverage"></div>
-          </article>
-          <article class="panel">
-            <div class="panel-heading"><div><p class="eyebrow">DATASET</p><h2>Source coverage</h2></div></div>
-            <div id="source-coverage"></div>
-          </article>
-          <article class="panel">
-            <div class="panel-heading"><div><p class="eyebrow">GUARDRAILS</p><h2>Interpretation policy</h2></div></div>
-            <div id="policy-list" class="policy-list"></div>
-          </article>
-          <article class="panel span-two">
-            <div class="panel-heading">
-              <div><p class="eyebrow">TRIAGE</p><h2>Notable sessions</h2></div>
-              <button class="text-button" data-go="sessions">Review all sessions →</button>
-            </div>
-            <div id="notable-sessions" class="compact-table"></div>
-          </article>
-        </div>
-      </section>
-
-      <section id="sessions-view" class="view" aria-labelledby="view-title">
+      <section id="sessions-view" class="view active" aria-labelledby="view-title">
         <div class="filter-bar">
           <label class="search-field"><span>⌕</span><input id="session-search" type="search" placeholder="Search prompts, tools, arguments, or session IDs"></label>
           <label><span>Android link</span><select id="session-run"><option value="">All sessions</option></select></label>
@@ -103,35 +66,6 @@
         </div>
       </section>
 
-      <section id="android-view" class="view" aria-labelledby="view-title">
-        <div class="filter-bar">
-          <label><span>Evidence run</span><select id="android-run"></select></label>
-          <label class="search-field"><span>⌕</span><input id="android-search" type="search" placeholder="Search message text, IDs, or threads"></label>
-          <label><span>Role</span><select id="android-role"><option value="all">All roles</option><option value="USER">User</option><option value="AGENT">Agent</option></select></label>
-          <label><span>Manifest join</span><select id="android-joined"><option value="all">All messages</option><option value="yes">Joined</option><option value="no">Unmatched</option></select></label>
-        </div>
-        <article class="panel android-panel">
-          <div id="android-run-header" class="run-header"></div>
-          <div id="android-message-list" class="message-timeline"></div>
-          <div id="android-pagination" class="pagination"></div>
-        </article>
-      </section>
-
-      <section id="methodology-view" class="view" aria-labelledby="view-title">
-        <div class="method-grid">
-          <article class="panel methodology-intro">
-            <p class="eyebrow">READING THE RECORD</p>
-            <h2>Evidence, inference, and non-claims</h2>
-            <p>This viewer keeps recorded relationships separate from reconstruction heuristics. Every displayed activity can be traced back to its source locator.</p>
-          </article>
-          <article class="panel method-card"><span>01</span><h3>Normalize sources</h3><p>Android messages use timestamp and sequence ordering. Provider transcripts use sequence ordering.</p></article>
-          <article class="panel method-card"><span>02</span><h3>Join stable IDs first</h3><p>Message IDs join Android records to manifest turns. Call IDs pair tool calls with outputs.</p></article>
-          <article class="panel method-card"><span>03</span><h3>Link matching content</h3><p>Transcript prompts link to Android messages using whitespace-normalized exact text.</p></article>
-          <article class="panel method-card"><span>04</span><h3>Group turns cautiously</h3><p>Actions after a user message are assigned to it until the next user message. This is positional inference.</p></article>
-          <article class="panel method-card"><span>05</span><h3>Report explicit approvals</h3><p>Approval is shown only when a user-confirmation status exists in a tool output.</p></article>
-          <article class="panel warning-card"><h3>What the viewer does not claim</h3><ul><li>Assistant statements do not prove external effects.</li><li>Unlinked sessions are not necessarily unrelated.</li><li>Missing approvals do not prove no prompt appeared.</li><li>Android and provider session IDs are separate namespaces.</li></ul></article>
-        </div>
-      </section>
     </main>
   </div>
   <div id="toast" class="toast" role="status"></div>
