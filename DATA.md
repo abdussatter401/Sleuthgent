@@ -1,8 +1,29 @@
 # Data preparation
 
-The research evidence is not part of the source-code artifact. It contains
-restricted and potentially sensitive material and must be obtained through the
-data-access process described by the paper or artifact repository.
+The owner-authorized research evidence is stored in this repository as
+`data.zip` using Git LFS. The package is unsanitized and may contain historical
+or private material. Install Git LFS before cloning so the archive is retrieved
+instead of only its pointer file:
+
+```bash
+git lfs install
+git clone https://github.com/abdussatter401/Sleuthgent.git
+cd Sleuthgent
+git lfs pull
+```
+
+Verify the archive before extraction:
+
+```text
+SHA-256  0eeba52c63cd3cae6e27b5ec768fd52620c30ec09b7bb8c4113415642a4cf5bf
+Size     294318505 bytes
+```
+
+Example:
+
+```bash
+sha256sum data.zip
+```
 
 ## Required inputs
 
@@ -44,6 +65,8 @@ input paths supplied to the parser.
 ## Data handling
 
 - Verify checksums supplied with the evidence before extraction.
+- Treat repository availability as distribution authorization, not as a statement
+  that the evidence is free of sensitive information.
 - Work on a controlled host appropriate for the evidence classification.
 - Do not commit raw evidence, extracted evidence, or parser output.
 - Review output before sharing because reconstructed content may remain

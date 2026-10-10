@@ -3,9 +3,10 @@
 ## Scope
 
 This artifact contains the Muse activity reconstruction parser, a local
-forensic viewer, synthetic tests, and the documented reconstruction method. It
-does not contain restricted research evidence or outputs derived from that
-evidence.
+forensic viewer, synthetic tests, and the documented reconstruction method.
+The source archive does not embed research evidence or outputs derived from
+that evidence. The owner-authorized dataset is tracked as `data.zip` through
+Git LFS, as documented in `DATA.md`.
 
 ## Requirements
 

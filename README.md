@@ -27,6 +27,17 @@ Run all synthetic validation with:
 make test
 ```
 
+## Dataset
+
+The owner-authorized research package is stored as `data.zip` using Git LFS:
+
+- SHA-256: `0eeba52c63cd3cae6e27b5ec768fd52620c30ec09b7bb8c4113415642a4cf5bf`
+- Size: 294,318,505 bytes
+
+The package is unsanitized and may contain historical or private material.
+Install Git LFS before cloning and review `DATA.md` before extracting or
+redistributing it.
+
 ## Usage
 
 ```bash
@@ -87,7 +98,8 @@ Use `--host` or `--port` to override the local address only when needed.
 ## Artifact packaging
 
 Raw evidence, extracted evidence, and parser output are intentionally excluded
-from the source artifact. See `DATA.md` for data preparation and `ARTIFACT.md`
+from the source-only archive. The owner-authorized `data.zip` is tracked
+separately through Git LFS. See `DATA.md` for data preparation and `ARTIFACT.md`
 for the evaluation workflow.
 
 Build the deterministic source archive with:
