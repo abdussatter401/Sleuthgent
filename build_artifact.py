@@ -5,7 +5,6 @@ from pathlib import Path
 
 
 FILES = (
-    '.gitattributes',
     '.gitignore',
     'Makefile',
     'README.md',

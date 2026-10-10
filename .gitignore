@@ -1,7 +1,6 @@
 __pycache__/
 *.py[cod]
 *.zip
-!data.zip
 data/
 extracted_data/
 parsed_data/
