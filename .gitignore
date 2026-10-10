@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.zip
+data/
+data.zip
+extracted_data/
+parsed_data/
+dist/
+.DS_Store
+.idea/
+.vscode/
+*.log
